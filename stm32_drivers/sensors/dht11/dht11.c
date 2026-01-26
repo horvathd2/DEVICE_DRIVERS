@@ -17,11 +17,12 @@ void delay_us(TIM_HandleTypeDef *htim_delay, uint32_t us)
 	//HAL_TIM_Base_Stop(htim_delay);
 }
 
-void set_pin_mode(DHT11_t *dht11_sensor, uint32_t mode, uint32_t speed)
+void set_pin_mode(DHT11_t *dht11_sensor, uint32_t mode, uint32_t pull, uint32_t speed)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 	GPIO_InitStruct.Pin = dht11_sensor->dht11_pin.gpio_pin;
 	GPIO_InitStruct.Mode = mode; //GPIO_MODE_OUTPUT_PP - Push-pull output or GPIO_MODE_INPUT
+	GPIO_InitStruct.Pull = pull;
 	GPIO_InitStruct.Speed = speed; //GPIO_SPEED_FREQ_LOW or GPIO_NOPULL
 	HAL_GPIO_Init(dht11_sensor->dht11_pin.gpio_port, &GPIO_InitStruct); //GPIOA
 }
@@ -72,12 +73,12 @@ static uint8_t dht11_read_byte(DHT11_t *dht11_sensor)
 
 uint8_t dht11_read_data(DHT11_t *dht11_sensor)
 {
-    set_pin_mode(dht11_sensor, GPIO_MODE_OUTPUT_PP, GPIO_SPEED_FREQ_LOW);
+    set_pin_mode(dht11_sensor, GPIO_MODE_OUTPUT_OD, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW);
     HAL_GPIO_WritePin(dht11_sensor->dht11_pin.gpio_port, dht11_sensor->dht11_pin.gpio_pin, GPIO_PIN_RESET); 	//Pull high to signal the DHT sensor
     HAL_Delay(20); 											//Delay for at least 18ms
     HAL_GPIO_WritePin(dht11_sensor->dht11_pin.gpio_port, dht11_sensor->dht11_pin.gpio_pin, GPIO_PIN_SET);		//Pull low and wait for response 30us
     delay_us(dht11_sensor->htim_usdelay,30);
-    set_pin_mode(dht11_sensor, GPIO_MODE_INPUT, GPIO_NOPULL);
+    set_pin_mode(dht11_sensor, GPIO_MODE_INPUT, GPIO_NOPULL, GPIO_SPEED_FREQ_LOW);
 
     if (dht11_response(dht11_sensor)) {
     	dht11_sensor->hum_int  = dht11_read_byte(dht11_sensor);
