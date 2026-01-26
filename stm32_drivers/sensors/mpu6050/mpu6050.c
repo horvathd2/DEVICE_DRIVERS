@@ -11,7 +11,7 @@
 
 MPU6050_t mpu6050_init(I2C_HandleTypeDef *mpu6050_i2c, uint8_t i2c_addr, GPIO_mpu6050 *mpu6050_it)
 {
-	MPU6050_t mpu6050_dev;
+	MPU6050_t mpu6050_dev = {0};
 
 	mpu6050_dev.mpu6050_i2c = mpu6050_i2c;
 	mpu6050_dev.mpu6050_it = mpu6050_it;

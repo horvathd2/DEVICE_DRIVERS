@@ -18,7 +18,7 @@ typedef struct{
 }GPIO_dht11;
 
 typedef struct{
-	GPIO_dht11 *dht11_pin;
+	GPIO_dht11 dht11_pin;
 	TIM_HandleTypeDef *htim_usdelay;
 	uint8_t hum_int;
 	uint8_t hum_dec;
@@ -29,8 +29,8 @@ typedef struct{
 
 void delay_us(TIM_HandleTypeDef *htim_delay, uint32_t us);
 void set_pin_mode(DHT11_t *dht11_sensor, uint32_t mode, uint32_t speed);
-DHT11_t dht11_init(GPIO_dht11 *dht11_pin, TIM_HandleTypeDef *htim_usdelay);
-uint8_t dht11_response(DHT11_t *dht11_sensor);
+DHT11_t dht11_init(GPIO_dht11 dht11_pin, TIM_HandleTypeDef *htim_usdelay);
+//uint8_t dht11_response(DHT11_t *dht11_sensor);
 uint8_t dht11_read_data(DHT11_t *dht11_sensor);
 
 #endif /* INC_DHT11_H_ */
