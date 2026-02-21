@@ -13,6 +13,9 @@ BME280_t bme280_init(COM_protocol_t com_prot)
 	BME280_t bme280_dev = {0};
 
 	bme280_dev.bme280_com = com_prot;
+	bme280_dev.temp_buff[3] = 0;
+	bme280_dev.press_buff[3] = 0;
+	bme280_dev.hum_buff[3] = 0;
 
 	return bme280_dev;
 }
@@ -83,17 +86,131 @@ uint32_t bme280_compensate_H_int32(BME280_t *bme280_dev, int32_t adc_H)
 }
 
 #if defined(HAL_I2C_MODULE_ENABLED)
-void bme280_read_i2c(BME280_t *bme280_dev)
+
+void bme280_read_temp_i2c(BME280_t *bme280_dev)
 {
-	HAL_SPI_Receive(bme280_dev->bme280_com.spi, bme280_dev->temperature, 2, HAL_MAX_DELAY);
+	uint16_t dev_addr = bme280_dev->bme280_com.bme_i2c.i2c_addr << 1;
+	HAL_I2C_Mem_Read(bme280_dev->bme280_com.bme_i2c.i2c, dev_addr, REG_TEMP_MSB, I2C_MEMADD_SIZE_8BIT,
+					 bme280_dev->temp_buff, I2C_TREAD_SIZE, HAL_MAX_DELAY);
 }
+
+void bme280_read_press_i2c(BME280_t *bme280_dev)
+{
+	uint16_t dev_addr = bme280_dev->bme280_com.bme_i2c.i2c_addr << 1;
+	HAL_I2C_Mem_Read(bme280_dev->bme280_com.bme_i2c.i2c, dev_addr, REG_PRESS_MSB, I2C_MEMADD_SIZE_8BIT,
+					 bme280_dev->press_buff, I2C_PREAD_SIZE, HAL_MAX_DELAY);
+}
+
+void bme280_read_hum_i2c(BME280_t *bme280_dev)
+{
+	uint16_t dev_addr = bme280_dev->bme280_com.bme_i2c.i2c_addr << 1;
+	HAL_I2C_Mem_Read(bme280_dev->bme280_com.bme_i2c.i2c, dev_addr, REG_HUM_MSB, I2C_MEMADD_SIZE_8BIT,
+					 bme280_dev->hum_buff, I2C_HREAD_SIZE, HAL_MAX_DELAY);
+}
+
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
-void bme280_read_spi(BME280_t *bme280_dev)
+
+void CS_LOW(BME280_t *bme280_dev)
 {
-	HAL_SPI_Receive(bme280_dev->bme280_com.spi, bme280_dev->temperature, 2, HAL_MAX_DELAY);
+	HAL_GPIO_WritePin(bme280_dev->bme280_com.bme_spi.cs_pin.CS_port,
+					  bme280_dev->bme280_com.bme_spi.cs_pin.CS_pin,
+					  GPIO_PIN_RESET);
 }
+
+void CS_HIGH(BME280_t *bme280_dev)
+{
+	HAL_GPIO_WritePin(bme280_dev->bme280_com.bme_spi.cs_pin.CS_port,
+					  bme280_dev->bme280_com.bme_spi.cs_pin.CS_pin,
+					  GPIO_PIN_SET);
+}
+
+void bme280_read_temp_spi(BME280_t *bme280_dev)
+{
+	/* Reading starts by sending a control byte
+	 * (full register address without bit 7)
+	 * and the read command (bit 7 = RW = ‘1’) */
+	uint8_t bme_reg = REG_TEMP_MSB | REG_READ;
+
+	CS_LOW(bme280_dev);
+	HAL_SPI_TransmitReceive(bme280_dev->bme280_com.bme_spi.spi, &bme_reg,
+							bme280_dev->temp_buff, SPI_TREAD_SIZE, HAL_MAX_DELAY);
+	CS_HIGH(bme280_dev);
+}
+
+void bme280_read_press_spi(BME280_t *bme280_dev)
+{
+	/* Reading starts by sending a control byte
+	 * (full register address without bit 7)
+	 * and the read command (bit 7 = RW = ‘1’) */
+	uint8_t bme_reg = REG_PRESS_MSB | REG_READ;
+
+	CS_LOW(bme280_dev);
+	HAL_SPI_TransmitReceive(bme280_dev->bme280_com.bme_spi.spi, &bme_reg,
+							bme280_dev->temp_buff, SPI_PREAD_SIZE, HAL_MAX_DELAY);
+	CS_HIGH(bme280_dev);
+}
+
+void bme280_read_hum_spi(BME280_t *bme280_dev)
+{
+	/* Reading starts by sending a control byte
+	 * (full register address without bit 7)
+	 * and the read command (bit 7 = RW = ‘1’) */
+	uint8_t bme_reg = REG_HUM_MSB | REG_READ;
+
+	CS_LOW(bme280_dev);
+	HAL_SPI_TransmitReceive(bme280_dev->bme280_com.bme_spi.spi, &bme_reg,
+							bme280_dev->temp_buff, SPI_HREAD_SIZE, HAL_MAX_DELAY);
+	CS_HIGH(bme280_dev);
+}
+
+void bme280_read_calib_param_spi(BME280_t *bme280_dev, uint8_t param_reg, uint8_t *buffer, uint16_t param_size)
+{
+	uint8_t bme_reg = param_reg | REG_READ;
+
+	HAL_SPI_TransmitReceive(bme280_dev->bme280_com.bme_spi.spi, &bme_reg,
+							bme280_dev->temp_buff, param_size, HAL_MAX_DELAY);
+}
+
+/* Trimming/calibration parameters should only be read once at initialization */
+void bme280_get_calib_param_spi(BME280_t *bme280_dev)
+{
+	CS_LOW(bme280_dev);
+
+	/* Read temperature/pressure/and hum1 calibration parameters */
+	bme280_read_calib_param_spi(bme280_dev, REG_DIGT1,
+								bme280_dev->calib_buff1, TRIM_SIZE1);
+
+	/* Read the rest of the humidity calibration parameters */
+	bme280_read_calib_param_spi(bme280_dev, REG_DIGH2,
+								bme280_dev->calib_buff2, TRIM_SIZE2);
+
+	CS_HIGH(bme280_dev);
+
+	bme280_dev->dig_T1 = (uint16_t)((bme280_dev->calib_buff1[DIGT1_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGT1_OFFSET]);
+	bme280_dev->dig_T2 = (int16_t)((bme280_dev->calib_buff1[DIGT2_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGT2_OFFSET]);
+	bme280_dev->dig_T3 = (int16_t)((bme280_dev->calib_buff1[DIGT3_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGT3_OFFSET]);
+
+	bme280_dev->dig_P1 = (uint16_t)((bme280_dev->calib_buff1[DIGP1_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP1_OFFSET]);
+	bme280_dev->dig_P2 = (int16_t)((bme280_dev->calib_buff1[DIGP2_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP2_OFFSET]);
+	bme280_dev->dig_P3 = (int16_t)((bme280_dev->calib_buff1[DIGP3_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP3_OFFSET]);
+	bme280_dev->dig_P4 = (int16_t)((bme280_dev->calib_buff1[DIGP4_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP4_OFFSET]);
+	bme280_dev->dig_P5 = (int16_t)((bme280_dev->calib_buff1[DIGP5_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP5_OFFSET]);
+	bme280_dev->dig_P6 = (int16_t)((bme280_dev->calib_buff1[DIGP6_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP6_OFFSET]);
+	bme280_dev->dig_P7 = (int16_t)((bme280_dev->calib_buff1[DIGP7_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP7_OFFSET]);
+	bme280_dev->dig_P8 = (int16_t)((bme280_dev->calib_buff1[DIGP8_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP8_OFFSET]);
+	bme280_dev->dig_P9 = (int16_t)((bme280_dev->calib_buff1[DIGP9_OFFSET+1] << 8) | bme280_dev->calib_buff1[DIGP9_OFFSET]);
+
+	bme280_dev->dig_H1 = (uint8_t)(bme280_dev->calib_buff1[DIGH1_OFFSET]);
+	bme280_dev->dig_H2 = (int16_t)((bme280_dev->calib_buff2[DIGH2_OFFSET+1] << 8) | bme280_dev->calib_buff2[DIGH2_OFFSET]);
+	bme280_dev->dig_H3 = (uint8_t)(bme280_dev->calib_buff2[DIGH3_OFFSET]);
+	bme280_dev->dig_H4 = (int16_t)((bme280_dev->calib_buff2[DIGH4_MSB] << 4) | (bme280_dev->calib_buff2[DIGH4_LSB] & 0x0F));
+	bme280_dev->dig_H5 = (int16_t)((bme280_dev->calib_buff2[DIGH5_MSB] << 4) | (bme280_dev->calib_buff2[DIGH5_LSB] >> 4));
+	bme280_dev->dig_H6 = (int8_t)(bme280_dev->calib_buff2[DIGH6_OFFSET]);
+
+}
+
 #endif
 
 
