@@ -24,9 +24,8 @@
 #define SPI_PREAD_SIZE	0x04
 #define SPI_HREAD_SIZE	0x03
 
-#define TRIM_TSIZE		0x06
-#define TRIM_PSIZE		0x12
-#define TRIM_HSIZE		0x09
+#define TRIM_SIZE1		0x19
+#define TRIM_SIZE2		0x08
 
 #define OVERSMPSKIP		0x00
 #define OVERSMPX1  		0x01
@@ -74,7 +73,6 @@
 #define DIGT1_OFFSET	0x00
 #define DIGT2_OFFSET	0x02
 #define DIGT3_OFFSET	0x04
-
 #define DIGP1_OFFSET	0x06
 #define DIGP2_OFFSET	0x08
 #define DIGP3_OFFSET	0x0A
@@ -100,6 +98,10 @@ typedef struct{
 }GPIO_t;
 
 #if defined(HAL_I2C_MODULE_ENABLED)
+
+#define BME_I2C_FAIL	0
+#define BME_I2C_OK		1
+
 typedef struct{
 	I2C_HandleTypeDef *i2c;
 	GPIO_t addr_pin;
@@ -108,6 +110,10 @@ typedef struct{
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
+
+#define BME_SPI_FAIL	0
+#define BME_SPI_OK		1
+
 typedef struct{
 	SPI_HandleTypeDef *spi;
 	GPIO_t cs_pin;
@@ -176,9 +182,9 @@ uint32_t bme280_compensate_H_int32(BME280_t *bme280_dev, int32_t adc_H);
 
 #if defined(HAL_I2C_MODULE_ENABLED)
 
-void bme280_read_temp_i2c(BME280_t *bme280_dev);
-void bme280_read_press_i2c(BME280_t *bme280_dev);
-void bme280_read_hum_i2c(BME280_t *bme280_dev);
+uint8_t bme280_read_temp_i2c(BME280_t *bme280_dev);
+uint8_t bme280_read_press_i2c(BME280_t *bme280_dev);
+uint8_t bme280_read_hum_i2c(BME280_t *bme280_dev);
 
 #endif
 
@@ -187,11 +193,11 @@ void bme280_read_hum_i2c(BME280_t *bme280_dev);
 void CS_LOW(BME280_t *bme280_dev);
 void CS_HIGH(BME280_t *bme280_dev);
 
-void bme280_read_temp_spi(BME280_t *bme280_dev);
-void bme280_read_press_spi(BME280_t *bme280_dev);
-void bme280_read_hum_spi(BME280_t *bme280_dev);
+uint8_t bme280_read_temp_spi(BME280_t *bme280_dev);
+uint8_t bme280_read_press_spi(BME280_t *bme280_dev);
+uint8_t bme280_read_hum_spi(BME280_t *bme280_dev);
 
-void bme280_read_calib_param_spi(BME280_t *bme280_dev, uint8_t param_reg, uint8_t *buffer, uint16_t param_size);
+static uint8_t bme280_read_calib_param_spi(BME280_t *bme280_dev, uint8_t param_reg, uint8_t *buffer, uint16_t param_size);
 
 #endif
 
