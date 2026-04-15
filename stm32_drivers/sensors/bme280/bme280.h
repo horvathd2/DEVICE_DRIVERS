@@ -98,19 +98,16 @@ typedef struct{
 }GPIO_t;
 
 #if defined(HAL_I2C_MODULE_ENABLED)
-
 #define BME_I2C_FAIL	0
 #define BME_I2C_OK		1
 
 typedef struct{
 	I2C_HandleTypeDef *i2c;
-	GPIO_t addr_pin;
 	uint8_t i2c_addr;
 }I2C_com_t;
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
-
 #define BME_SPI_FAIL	0
 #define BME_SPI_OK		1
 
@@ -120,18 +117,22 @@ typedef struct{
 }SPI_com_t;
 #endif
 
-typedef union{
+typedef struct{
+	uint8_t (*read)(uint8_t reg, uint8_t *data, uint16_t len);
+	uint8_t (*write)(uint8_t reg, const uint8_t *data, uint16_t len);
+
 #if defined(HAL_I2C_MODULE_ENABLED)
-	I2C_com_t bme_i2c;
+	I2C_com_t bme280_i2c;
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
-    SPI_com_t bme_spi;
+	SPI_com_t bme280_spi;
 #endif
-}COM_protocol_t;
+
+}bme280_com_prot_t;
 
 typedef struct{
-	COM_protocol_t bme280_com;
+	bme280_com_prot_t bme280_com;
 
 	uint8_t temp_buff[3];
 	uint8_t press_buff[3];
@@ -172,16 +173,10 @@ typedef struct{
 	int8_t dig_H6;		//0xE7
 }BME280_t;
 
-BME280_t bme280_init(COM_protocol_t com_prot);
-
-int32_t BME280_compensate_T_int32(BME280_t *bme280_dev, int32_t adc_T);
-
-uint32_t BME280_compensate_P_int64(BME280_t *bme280_dev, int32_t adc_P);
-
-uint32_t bme280_compensate_H_int32(BME280_t *bme280_dev, int32_t adc_H);
-
 #if defined(HAL_I2C_MODULE_ENABLED)
 
+uint8_t bme280_init_i2c(BME280_t *bme280_dev,I2C_HandleTypeDef *i2c, uint8_t i2c_addr);
+uint8_t bme280_read_i2c(BME280_t *bme280_dev, uint8_t reg, uint8_t *data_buff, uint16_t len);
 uint8_t bme280_read_temp_i2c(BME280_t *bme280_dev);
 uint8_t bme280_read_press_i2c(BME280_t *bme280_dev);
 uint8_t bme280_read_hum_i2c(BME280_t *bme280_dev);
@@ -190,14 +185,13 @@ uint8_t bme280_read_hum_i2c(BME280_t *bme280_dev);
 
 #if defined(HAL_SPI_MODULE_ENABLED)
 
+uint8_t bme280_init_spi(BME280_t *bme280_dev, SPI_HandleTypeDef *spi, GPIO_t cs_pin);
+uint8_t bme280_read_spi(BME280_t *bme280_dev, uint8_t reg, uint8_t *data_buff, uint16_t len);
 void CS_LOW(BME280_t *bme280_dev);
 void CS_HIGH(BME280_t *bme280_dev);
-
 uint8_t bme280_read_temp_spi(BME280_t *bme280_dev);
 uint8_t bme280_read_press_spi(BME280_t *bme280_dev);
 uint8_t bme280_read_hum_spi(BME280_t *bme280_dev);
-
-static uint8_t bme280_read_calib_param_spi(BME280_t *bme280_dev, uint8_t param_reg, uint8_t *buffer, uint16_t param_size);
 
 #endif
 
