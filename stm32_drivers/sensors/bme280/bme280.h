@@ -92,15 +92,17 @@
 #define DIGH5_MSB     	0x05  // 0xE6
 #define DIGH6_OFFSET  	0x06  // 0xE7
 
+#define BME_FAIL		0
+#define BME_OK			1
+
 typedef struct{
 	GPIO_TypeDef *gpio_port;
 	uint16_t gpio_pin;
 }GPIO_t;
 
-#if defined(HAL_I2C_MODULE_ENABLED)
-#define BME_I2C_FAIL	0
-#define BME_I2C_OK		1
+typedef struct BME280_t BME280_t;
 
+#if defined(HAL_I2C_MODULE_ENABLED)
 typedef struct{
 	I2C_HandleTypeDef *i2c;
 	uint8_t i2c_addr;
@@ -108,18 +110,18 @@ typedef struct{
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
-#define BME_SPI_FAIL	0
-#define BME_SPI_OK		1
-
 typedef struct{
 	SPI_HandleTypeDef *spi;
 	GPIO_t cs_pin;
 }SPI_com_t;
 #endif
 
-typedef struct{
-	uint8_t (*read)(uint8_t reg, uint8_t *data, uint16_t len);
-	uint8_t (*write)(uint8_t reg, const uint8_t *data, uint16_t len);
+/* --- 		SWITCH TO OPAQUE DRIVERS? 		--- */
+/* --- WOULD REQUIRE DINAMIC MEM ALLOCATION --- */
+
+struct BME280_t{
+	uint8_t (*read)(BME280_t *bme280_dev, uint8_t reg, uint8_t *data, uint16_t len);
+	uint8_t (*write)(BME280_t *bme280_dev, uint8_t reg, const uint8_t *data, uint16_t len);
 
 #if defined(HAL_I2C_MODULE_ENABLED)
 	I2C_com_t bme280_i2c;
@@ -128,11 +130,6 @@ typedef struct{
 #if defined(HAL_SPI_MODULE_ENABLED)
 	SPI_com_t bme280_spi;
 #endif
-
-}bme280_com_prot_t;
-
-typedef struct{
-	bme280_com_prot_t bme280_com;
 
 	uint8_t temp_buff[3];
 	uint8_t press_buff[3];
@@ -171,7 +168,7 @@ typedef struct{
 	int16_t dig_H4;		//0xE4
 	int16_t dig_H5;		//0xE5
 	int8_t dig_H6;		//0xE7
-}BME280_t;
+};
 
 #if defined(HAL_I2C_MODULE_ENABLED)
 
