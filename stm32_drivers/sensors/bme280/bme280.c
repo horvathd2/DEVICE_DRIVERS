@@ -7,6 +7,7 @@
 
 #include "bme280.h"
 #include "main.h"
+#include "string.h"
 
 /* Trimming/calibration parameters should only be read once at initialization */
 static bme_err_t bme280_get_calib_param(BME280_t *bme280_dev)
@@ -127,6 +128,8 @@ bme_err_t bme280_init_i2c(BME280_t *bme280_dev,
 	if (bme280_dev == NULL || i2c == NULL)
 		return BME_FAIL;
 
+	memset(bme280_dev, 0, sizeof(BME280_t));
+
 	bme280_dev->read = bme280_read_i2c;
 	bme280_dev->bme280_i2c.i2c = i2c;
 	bme280_dev->bme280_i2c.i2c_addr = i2c_addr;
@@ -209,6 +212,8 @@ bme_err_t bme280_init_spi(BME280_t *bme280_dev,
 {
 	if (bme280_dev == NULL || spi == NULL)
 		return BME_FAIL;
+
+	memset(bme280_dev, 0, sizeof(BME280_t));
 
 	bme280_dev->read = bme280_read_spi;
 	bme280_dev->bme280_spi.spi = spi;
