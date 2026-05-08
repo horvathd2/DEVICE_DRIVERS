@@ -1,11 +1,11 @@
 /*
- * bme280.c
+ * bmp280.c
  *
- *  Created on: Jan 25, 2026
+ *  Created on: May 8, 2026
  *      Author: H.Dani
  */
 
-#include "bme280.h"
+#include "bmp280.h"
 #include "main.h"
 #include "string.h"
 

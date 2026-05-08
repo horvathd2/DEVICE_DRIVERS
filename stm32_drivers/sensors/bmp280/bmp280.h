@@ -1,12 +1,12 @@
 /*
- * bme280.h
+ * bmp280.h
  *
- *  Created on: Jan 25, 2026
+ *  Created on: May 8, 2026
  *      Author: H.Dani
  */
 
-#ifndef INC_BME280_H_
-#define INC_BME280_H_
+#ifndef INC_BMP280_H_
+#define INC_BMP280_H_
 
 #include "main.h"
 
@@ -133,9 +133,9 @@
 #define BME_OK			0
 
 
-typedef struct BME280_t BME280_t;
+typedef struct BMP280_t BMP280_t;
 
-typedef uint8_t bme_err_t;
+typedef uint8_t bmp_err_t;
 
 typedef struct{
 	GPIO_TypeDef *gpio_port;
@@ -230,4 +230,4 @@ bme_err_t bme280_read_temp(BME280_t *bme280_dev);
 bme_err_t bme280_read_press(BME280_t *bme280_dev);
 bme_err_t bme280_read_hum(BME280_t *bme280_dev);
 
-#endif /* INC_BME280_H_ */
+#endif /* INC_BMP280_H_ */
