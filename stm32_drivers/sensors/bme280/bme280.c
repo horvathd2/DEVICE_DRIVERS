@@ -54,7 +54,7 @@ static bme_err_t bme280_get_calib_param(BME280_t *bme280_dev)
 
 bme_err_t bme280_configure(BME280_t *bme280_dev)
 {
-	uint8_t config_buff[4] = {
+	uint8_t config_buff[3] = {
 			BME280_HUM_OSRS_X1,
 			BME280_CTRL_MEAS(BME280_OSRS_X1,
 			                 BME280_OSRS_X1,
@@ -184,14 +184,14 @@ bme_err_t bme280_init_i2c(BME280_t *bme280_dev,
 
 #if defined(HAL_SPI_MODULE_ENABLED)
 
-void CS_LOW(BME280_t *bme280_dev)
+static void CS_LOW(BME280_t *bme280_dev)
 {
 	HAL_GPIO_WritePin(bme280_dev->bme280_spi.cs_pin.gpio_port,
 					  bme280_dev->bme280_spi.cs_pin.gpio_pin,
 					  GPIO_PIN_RESET);
 }
 
-void CS_HIGH(BME280_t *bme280_dev)
+static void CS_HIGH(BME280_t *bme280_dev)
 {
 	HAL_GPIO_WritePin(bme280_dev->bme280_spi.cs_pin.gpio_port,
 					  bme280_dev->bme280_spi.cs_pin.gpio_pin,

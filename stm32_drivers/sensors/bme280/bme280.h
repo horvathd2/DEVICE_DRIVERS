@@ -10,6 +10,8 @@
 
 #include "main.h"
 
+#define BME_CHIP_ID		0x58
+
 #define BME_I2C_ADDR1	0x76
 #define BME_I2C_ADDR2	0x77
 
@@ -220,8 +222,6 @@ bme_err_t bme280_init_i2c(BME280_t *bme280_dev,I2C_HandleTypeDef *i2c, uint8_t i
 
 #if defined(HAL_SPI_MODULE_ENABLED)
 
-void CS_LOW(BME280_t *bme280_dev);
-void CS_HIGH(BME280_t *bme280_dev);
 bme_err_t bme280_init_spi(BME280_t *bme280_dev, SPI_HandleTypeDef *spi, GPIO_t cs_pin);
 
 #endif
