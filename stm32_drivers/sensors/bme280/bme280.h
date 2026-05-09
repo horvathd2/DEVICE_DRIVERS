@@ -10,7 +10,7 @@
 
 #include "main.h"
 
-#define BME_CHIP_ID		0x58
+#define BME_CHIP_ID		0x60
 
 #define BME_I2C_ADDR1	0x76
 #define BME_I2C_ADDR2	0x77
@@ -131,8 +131,10 @@
 #define DIGH5_MSB     	0x05  // 0xE6
 #define DIGH6_OFFSET  	0x06  // 0xE7
 
-#define BME_FAIL		1
-#define BME_OK			0
+typedef enum{
+	BME_OK = 0x00,
+	BME_FAIL = 0x01,
+}bmp_status_t;
 
 
 typedef struct BME280_t BME280_t;

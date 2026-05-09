@@ -156,14 +156,16 @@
 #define BNO055_MAG_RADIUS_LSB_ADDR       0x69
 #define BNO055_MAG_RADIUS_MSB_ADDR       0x6A
 
-#define BNO_OK		0
-#define BNO_FAIL	1
+typedef enum{
+	BNO_OK = 0x00,
+	BNO_FAIL = 0x01,
+}bno_status_t;
 
 typedef uint8_t bno_err_t;
 
-typedef struct BMO055_t BMO055_t;
+typedef struct BNO055_t BNO055_t;
 
-struct BMO055_t{
+struct BNO055_t{
 
 };
 

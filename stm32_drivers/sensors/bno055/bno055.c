@@ -11,6 +11,7 @@
 
 bno_err_t BNO055_init(BNO055_t *self)
 {
+
 	return BNO_OK;
 }
 

@@ -31,16 +31,31 @@
 #define AS5600_ANGLE_COM		0x80
 #define AS5600_BURN_SETTING		0x40
 
-typedef struct {
+#define AS5600_RESOLUTION		4096.0f
+
+typedef enum{
+	AS_OK = 0x00,
+	AS_FAIL = 0x01,
+}as_status_t;
+
+typedef uint8_t as_err_t;
+
+typedef struct AS5600_t AS5600_t;
+
+struct AS5600_t{
+	as_err_t (*read)(AS5600_t *self, uint8_t reg, uint8_t *data, uint16_t len);
+	as_err_t (*write)(AS5600_t *self, uint8_t reg, const uint8_t *data, uint16_t len);
+	as_err_t (*delay)(uint16_t ticks);
+
 	I2C_HandleTypeDef *as5600_i2c;
-	float filtered_angle;
-	uint16_t raw_angle;
 	float magnitude;
+	uint16_t raw_angle;
 	uint8_t angle_buf[2];
 	uint8_t i2c_addr;
-}AS5600_t;
+	volatile uint8_t dma_rx_done;
+};
 
-AS5600_t as5600_init(I2C_HandleTypeDef *as5600_i2c, uint8_t i2c_addr);
-uint8_t as5600_read_angle(AS5600_t *as5600);
+as_err_t as5600_init(AS5600_t *self, I2C_HandleTypeDef *as5600_i2c, uint8_t i2c_addr);
+as_err_t as5600_read_angle(AS5600_t *self);
 
 #endif /* INC_AS5600_H_ */

@@ -105,8 +105,10 @@
 #define DIGP8_OFFSET	0x14
 #define DIGP9_OFFSET	0x16  //22
 
-#define BMP_FAIL		1
-#define BMP_OK			0
+typedef enum{
+	BMP_OK = 0x00,
+	BMP_FAIL = 0x01,
+}bmp_status_t;
 
 
 typedef struct BMP280_t BMP280_t;
