@@ -40,20 +40,26 @@ static bmp_err_t bmp280_get_calib_param(BMP280_t *bmp280_dev)
 
 bmp_err_t bmp280_configure(BMP280_t *bmp280_dev)
 {
-	uint8_t config_buff[2] = {
-			BMP280_CTRL_MEAS(BMP280_OSRS_X1,
-							 BMP280_OSRS_X1,
-							 BMP280_MODE_NORMAL),
-			BMP280_CONFIG(BMP280_STBY_0_5_MS,
-						  BMP280_FILTER_OFF)
-	};
+	uint8_t ctrl_meas = BMP280_CTRL_MEAS(BMP280_OSRS_X4, BMP280_OSRS_X4, BMP280_MODE_NORMAL);
+	uint8_t config    = BMP280_CONFIG(BMP280_STBY_250_MS, BMP280_FILTER_OFF);
 
-
-	if(bmp280_dev->write(bmp280_dev, REG_CTRL_MEAS, &config_buff[1], 1) != BMP_OK)
+	if(bmp280_dev->write(bmp280_dev, REG_CTRL_MEAS, &ctrl_meas, 1) != BMP_OK)
 		return BMP_FAIL;
 
-	if(bmp280_dev->write(bmp280_dev, REG_CONFIG, &config_buff[2], 1) != BMP_OK)
+	if(bmp280_dev->write(bmp280_dev, REG_CONFIG, &config, 1) != BMP_OK)
 		return BMP_FAIL;
+
+	return BMP_OK;
+}
+
+static bmp_err_t bmp280_soft_reset(BMP280_t *bmp280_dev)
+{
+	uint8_t reset_cmd = BMP280_SOFT_RESET_CMD;
+
+	if (bmp280_dev->write(bmp280_dev, REG_RESET, &reset_cmd, 1) != BMP_OK)
+		return BMP_FAIL;
+
+	HAL_Delay(20);
 
 	return BMP_OK;
 }
@@ -117,6 +123,18 @@ static bmp_err_t bmp280_read_i2c(BMP280_t *bmp280_dev, uint8_t reg, uint8_t *dat
 	return BMP_OK;
 }
 
+static bmp_err_t bmp280_write_i2c(BMP280_t *bmp280_dev, uint8_t reg, const uint8_t *data_buff, uint16_t len)
+{
+	uint16_t dev_addr = bmp280_dev->bmp280_i2c.i2c_addr << 1;
+	if(HAL_I2C_Mem_Write(bmp280_dev->bmp280_i2c.i2c, dev_addr, reg, I2C_MEMADD_SIZE_8BIT,
+						 (uint8_t*)data_buff, len, HAL_MAX_DELAY) != HAL_OK)
+	{
+		return BMP_FAIL;
+	}
+
+	return BMP_OK;
+}
+
 bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,
 						  I2C_HandleTypeDef *i2c,
 						  uint8_t i2c_addr)
@@ -127,14 +145,26 @@ bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,
 	memset(bmp280_dev, 0, sizeof(BMP280_t));
 
 	bmp280_dev->read = bmp280_read_i2c;
-	bmp280_dev->write = NULL;
+	bmp280_dev->write = bmp280_write_i2c;
 	bmp280_dev->delay = NULL;
 	bmp280_dev->bmp280_i2c.i2c = i2c;
 	bmp280_dev->bmp280_i2c.i2c_addr = i2c_addr;
 
-	//ADD CALIBRATION CHECK? MORE FLAGS?
-	if(bme280_get_calib_param(bmp280_dev) != BMP_OK)
+	if(bmp280_soft_reset(bmp280_dev) != BMP_OK)
 		return BMP_FAIL;
+
+	HAL_Delay(100);
+
+	if (bmp280_dev->read(bmp280_dev, REG_ID, &bmp280_dev->chip_id, 1) != BMP_OK)
+		return BMP_FAIL;
+
+	if(bmp280_get_calib_param(bmp280_dev) != BMP_OK)
+		return BMP_FAIL;
+
+	if(bmp280_configure(bmp280_dev) != BMP_OK)
+		return BMP_FAIL;
+
+	HAL_Delay(150);
 
 	return BMP_OK;
 }
@@ -164,28 +194,52 @@ static bmp_err_t bmp280_read_spi(BMP280_t *bmp280_dev, uint8_t reg, uint8_t *dat
 	/* Reading starts by sending a control byte
 	* (full register address without bit 7)
 	* and the read command (bit 7 = RW = ‘1’) */
+//	uint8_t addr = reg | SPI_REG_READ;
+//
+//	CS_LOW(bmp280_dev);
+//
+//	// 1. send register address
+//	if (HAL_SPI_Transmit(bmp280_dev->bmp280_spi.spi,
+//						 &addr, 1, HAL_MAX_DELAY) != HAL_OK)
+//	{
+//		CS_HIGH(bmp280_dev);
+//		return BMP_FAIL;
+//	}
+//
+//	// 2. receive data (dummy transmit)
+//	if (HAL_SPI_Receive(bmp280_dev->bmp280_spi.spi,
+//						data_buff, len, HAL_MAX_DELAY) != HAL_OK)
+//	{
+//		CS_HIGH(bmp280_dev);
+//		return BMP_FAIL;
+//	}
+//
+//	CS_HIGH(bmp280_dev);
+//
+//	return BMP_OK;
 	uint8_t addr = reg | SPI_REG_READ;
+	uint8_t dummy = 0x00;
 
 	CS_LOW(bmp280_dev);
 
-	// 1. send register address
-	if (HAL_SPI_Transmit(bmp280_dev->bmp280_spi.spi,
-						 &addr, 1, HAL_MAX_DELAY) != HAL_OK)
+	// Send register address
+	if (HAL_SPI_Transmit(bmp280_dev->bmp280_spi.spi, &addr, 1, HAL_MAX_DELAY) != HAL_OK)
 	{
 		CS_HIGH(bmp280_dev);
 		return BMP_FAIL;
 	}
 
-	// 2. receive data (dummy transmit)
-	if (HAL_SPI_Receive(bmp280_dev->bmp280_spi.spi,
-						data_buff, len, HAL_MAX_DELAY) != HAL_OK)
+	// Receive data using TransmitReceive (more reliable)
+	for(uint16_t i = 0; i < len; i++)
 	{
-		CS_HIGH(bmp280_dev);
-		return BMP_FAIL;
+		if (HAL_SPI_TransmitReceive(bmp280_dev->bmp280_spi.spi, &dummy, &data_buff[i], 1, HAL_MAX_DELAY) != HAL_OK)
+		{
+			CS_HIGH(bmp280_dev);
+			return BMP_FAIL;
+		}
 	}
 
 	CS_HIGH(bmp280_dev);
-
 	return BMP_OK;
 }
 
@@ -216,7 +270,7 @@ static bmp_err_t bmp280_write_spi(BMP280_t *bmp280_dev, uint8_t reg, const uint8
 
 bmp_err_t bmp280_init_spi(BMP280_t *bmp280_dev,
 						  SPI_HandleTypeDef *spi,
-						  GPIO_t cs_pin)
+						  GPIO_bmp_t cs_pin)
 {
 	if (bmp280_dev == NULL || spi == NULL)
 		return BMP_FAIL;
@@ -229,14 +283,21 @@ bmp_err_t bmp280_init_spi(BMP280_t *bmp280_dev,
 	bmp280_dev->bmp280_spi.spi = spi;
 	bmp280_dev->bmp280_spi.cs_pin = cs_pin;
 
+	if(bmp280_soft_reset(bmp280_dev) != BMP_OK)
+		return BMP_FAIL;
+
+	HAL_Delay(100);
+
 	if (bmp280_dev->read(bmp280_dev, REG_ID, &bmp280_dev->chip_id, 1) != BMP_OK)
 		return BMP_FAIL;
 
-	if(bme280_get_calib_param(bmp280_dev) != BMP_OK)
+	if(bmp280_get_calib_param(bmp280_dev) != BMP_OK)
 		return BMP_FAIL;
 
-	//if(bme280_configure(bmp280_dev) != BMP_OK)
-	//	return BMP_FAIL;
+	if(bmp280_configure(bmp280_dev) != BMP_OK)
+		return BMP_FAIL;
+
+	HAL_Delay(150);
 
 	return BMP_OK;
 }

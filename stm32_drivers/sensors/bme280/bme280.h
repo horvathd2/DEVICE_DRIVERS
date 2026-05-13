@@ -134,8 +134,7 @@
 typedef enum{
 	BME_OK = 0x00,
 	BME_FAIL = 0x01,
-}bmp_status_t;
-
+}bme_status_t;
 
 typedef struct BME280_t BME280_t;
 
@@ -144,20 +143,20 @@ typedef uint8_t bme_err_t;
 typedef struct{
 	GPIO_TypeDef *gpio_port;
 	uint16_t gpio_pin;
-}GPIO_t;
+}GPIO_bme_t;
 
 #if defined(HAL_I2C_MODULE_ENABLED)
 typedef struct{
 	I2C_HandleTypeDef *i2c;
 	uint8_t i2c_addr;
-}I2C_com_t;
+}I2C_bme_t;
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
 typedef struct{
 	SPI_HandleTypeDef *spi;
-	GPIO_t cs_pin;
-}SPI_com_t;
+	GPIO_bme_t cs_pin;
+}SPI_bme_t;
 #endif
 
 struct BME280_t{
@@ -166,11 +165,11 @@ struct BME280_t{
 	bme_err_t (*delay)(uint16_t ticks);
 
 #if defined(HAL_I2C_MODULE_ENABLED)
-	I2C_com_t bme280_i2c;
+	I2C_bme_t bme280_i2c;
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
-	SPI_com_t bme280_spi;
+	SPI_bme_t bme280_spi;
 #endif
 
 	uint8_t temp_buff[3];
@@ -224,7 +223,7 @@ bme_err_t bme280_init_i2c(BME280_t *bme280_dev,I2C_HandleTypeDef *i2c, uint8_t i
 
 #if defined(HAL_SPI_MODULE_ENABLED)
 
-bme_err_t bme280_init_spi(BME280_t *bme280_dev, SPI_HandleTypeDef *spi, GPIO_t cs_pin);
+bme_err_t bme280_init_spi(BME280_t *bme280_dev, SPI_HandleTypeDef *spi, GPIO_bme_t cs_pin);
 
 #endif
 

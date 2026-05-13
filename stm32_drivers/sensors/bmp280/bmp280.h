@@ -22,8 +22,7 @@
 #define PREAD_SIZE		0x03
 #define HREAD_SIZE		0x02
 
-#define TRIM_SIZE1		0x1A
-#define TRIM_SIZE2		0x08
+#define TRIM_SIZE1		0x18
 
 #define OVERSMPSKIP		0x00
 #define OVERSMPX1  		0x01
@@ -110,7 +109,6 @@ typedef enum{
 	BMP_FAIL = 0x01,
 }bmp_status_t;
 
-
 typedef struct BMP280_t BMP280_t;
 
 typedef uint8_t bmp_err_t;
@@ -118,20 +116,20 @@ typedef uint8_t bmp_err_t;
 typedef struct{
 	GPIO_TypeDef *gpio_port;
 	uint16_t gpio_pin;
-}GPIO_t;
+}GPIO_bmp_t;
 
 #if defined(HAL_I2C_MODULE_ENABLED)
 typedef struct{
 	I2C_HandleTypeDef *i2c;
 	uint8_t i2c_addr;
-}I2C_com_t;
+}I2C_bmp_t;
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
 typedef struct{
 	SPI_HandleTypeDef *spi;
-	GPIO_t cs_pin;
-}SPI_com_t;
+	GPIO_bmp_t cs_pin;
+}SPI_bmp_t;
 #endif
 
 struct BMP280_t{
@@ -140,27 +138,23 @@ struct BMP280_t{
 	bmp_err_t (*delay)(uint16_t ticks);
 
 #if defined(HAL_I2C_MODULE_ENABLED)
-	I2C_com_t bmp280_i2c;
+	I2C_bmp_t bmp280_i2c;
 #endif
 
 #if defined(HAL_SPI_MODULE_ENABLED)
-	SPI_com_t bmp280_spi;
+	SPI_bmp_t bmp280_spi;
 #endif
 
 	uint8_t temp_buff[3];
 	uint8_t press_buff[3];
-	uint8_t hum_buff[3];
 
-	uint8_t calib_buff1[26];
-	uint8_t calib_buff2[8];
+	uint8_t calib_buff1[24];
 
 	int32_t raw_temperature;
 	int32_t raw_pressure;
-	int32_t raw_humidity;
 
 	int32_t comp_temperature;
 	uint32_t comp_pressure;
-	uint32_t comp_humidity;
 
 	uint8_t chip_id;
 
@@ -181,8 +175,6 @@ struct BMP280_t{
 	int16_t dig_P9;		//0x9E
 };
 
-
-
 #if defined(HAL_I2C_MODULE_ENABLED)
 
 bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,I2C_HandleTypeDef *i2c, uint8_t i2c_addr);
@@ -191,7 +183,7 @@ bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,I2C_HandleTypeDef *i2c, uint8_t i
 
 #if defined(HAL_SPI_MODULE_ENABLED)
 
-bmp_err_t bmp280_init_spi(BMP280_t *bmp280_dev, SPI_HandleTypeDef *spi, GPIO_t cs_pin);
+bmp_err_t bmp280_init_spi(BMP280_t *bmp280_dev, SPI_HandleTypeDef *spi, GPIO_bmp_t cs_pin);
 
 #endif
 

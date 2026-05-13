@@ -156,6 +156,18 @@ static bme_err_t bme280_read_i2c(BME280_t *bme280_dev, uint8_t reg, uint8_t *dat
 	return BME_OK;
 }
 
+static bme_err_t bme280_write_i2c(BME280_t *bme280_dev, uint8_t reg, const uint8_t *data_buff, uint16_t len)
+{
+	uint16_t dev_addr = bme280_dev->bme280_i2c.i2c_addr << 1;
+	if(HAL_I2C_Mem_Write(bme280_dev->bme280_i2c.i2c, dev_addr, reg, I2C_MEMADD_SIZE_8BIT,
+						 (uint8_t*)data_buff, len, HAL_MAX_DELAY) != HAL_OK)
+	{
+		return BME_FAIL;
+	}
+
+	return BME_OK;
+}
+
 bme_err_t bme280_init_i2c(BME280_t *bme280_dev,
 						  I2C_HandleTypeDef *i2c,
 						  uint8_t i2c_addr)
@@ -166,12 +178,11 @@ bme_err_t bme280_init_i2c(BME280_t *bme280_dev,
 	memset(bme280_dev, 0, sizeof(BME280_t));
 
 	bme280_dev->read = bme280_read_i2c;
-	bme280_dev->write = NULL;
+	bme280_dev->write = bme280_write_i2c;
 	bme280_dev->delay = NULL;
 	bme280_dev->bme280_i2c.i2c = i2c;
 	bme280_dev->bme280_i2c.i2c_addr = i2c_addr;
 
-	//ADD CALIBRATION CHECK? MORE FLAGS?
 	if(bme280_get_calib_param(bme280_dev) != BME_OK)
 		return BME_FAIL;
 
@@ -255,7 +266,7 @@ static bme_err_t bme280_write_spi(BME280_t *bme280_dev, uint8_t reg, const uint8
 
 bme_err_t bme280_init_spi(BME280_t *bme280_dev,
 						  SPI_HandleTypeDef *spi,
-						  GPIO_t cs_pin)
+						  GPIO_bme_t cs_pin)
 {
 	if (bme280_dev == NULL || spi == NULL)
 		return BME_FAIL;
@@ -274,8 +285,8 @@ bme_err_t bme280_init_spi(BME280_t *bme280_dev,
 	if(bme280_get_calib_param(bme280_dev) != BME_OK)
 		return BME_FAIL;
 
-	//if(bme280_configure(bme280_dev) != BME_OK)
-	//	return BME_FAIL;
+	if(bme280_configure(bme280_dev) != BME_OK)
+		return BME_FAIL;
 
 	return BME_OK;
 }
