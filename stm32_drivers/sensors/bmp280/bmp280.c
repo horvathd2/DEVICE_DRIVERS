@@ -59,7 +59,7 @@ static bmp_err_t bmp280_soft_reset(BMP280_t *bmp280_dev)
 	if (bmp280_dev->write(bmp280_dev, REG_RESET, &reset_cmd, 1) != BMP_OK)
 		return BMP_FAIL;
 
-	HAL_Delay(20);
+	bmp280_dev->delay(20);
 
 	return BMP_OK;
 }
@@ -109,7 +109,7 @@ static uint32_t BMP280_compensate_P_int64(BMP280_t *bmp280_dev, int32_t adc_P)
 
 /*-----------I2C--------------*/
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BMP280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 
 static bmp_err_t bmp280_read_i2c(BMP280_t *bmp280_dev, uint8_t reg, uint8_t *data_buff, uint16_t len)
 {
@@ -146,14 +146,14 @@ bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,
 
 	bmp280_dev->read = bmp280_read_i2c;
 	bmp280_dev->write = bmp280_write_i2c;
-	bmp280_dev->delay = NULL;
+	bmp280_dev->delay = HAL_Delay;
 	bmp280_dev->bmp280_i2c.i2c = i2c;
 	bmp280_dev->bmp280_i2c.i2c_addr = i2c_addr;
 
 	if(bmp280_soft_reset(bmp280_dev) != BMP_OK)
 		return BMP_FAIL;
 
-	HAL_Delay(100);
+	bmp280_dev->delay(100);
 
 	if (bmp280_dev->read(bmp280_dev, REG_ID, &bmp280_dev->chip_id, 1) != BMP_OK)
 		return BMP_FAIL;
@@ -164,7 +164,7 @@ bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,
 	if(bmp280_configure(bmp280_dev) != BMP_OK)
 		return BMP_FAIL;
 
-	HAL_Delay(150);
+	bmp280_dev->delay(150);
 
 	return BMP_OK;
 }
@@ -173,7 +173,7 @@ bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,
 
 /*-----------SPI--------------*/
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BMP280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 
 static void CS_LOW(BMP280_t *bmp280_dev)
 {
@@ -279,14 +279,14 @@ bmp_err_t bmp280_init_spi(BMP280_t *bmp280_dev,
 
 	bmp280_dev->read = bmp280_read_spi;
 	bmp280_dev->write = bmp280_write_spi;
-	bmp280_dev->delay = NULL;
+	bmp280_dev->delay = HAL_Delay;
 	bmp280_dev->bmp280_spi.spi = spi;
 	bmp280_dev->bmp280_spi.cs_pin = cs_pin;
 
 	if(bmp280_soft_reset(bmp280_dev) != BMP_OK)
 		return BMP_FAIL;
 
-	HAL_Delay(100);
+	bmp280_dev->delay(100);
 
 	if (bmp280_dev->read(bmp280_dev, REG_ID, &bmp280_dev->chip_id, 1) != BMP_OK)
 		return BMP_FAIL;
@@ -297,7 +297,7 @@ bmp_err_t bmp280_init_spi(BMP280_t *bmp280_dev,
 	if(bmp280_configure(bmp280_dev) != BMP_OK)
 		return BMP_FAIL;
 
-	HAL_Delay(150);
+	bmp280_dev->delay(150);
 
 	return BMP_OK;
 }

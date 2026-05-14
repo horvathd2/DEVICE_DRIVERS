@@ -131,28 +131,35 @@
 #define DIGH5_MSB     	0x05  // 0xE6
 #define DIGH6_OFFSET  	0x06  // 0xE7
 
+/*-----------COM Interface Selection (use either SPI or I2C, not both)------------*/
+#define BME280_USE_I2C	1     // Set 1 to use I2C
+#define BME280_USE_SPI	0     // Set 1 to use SPI
+
+#if (BME280_USE_I2C + BME280_USE_SPI) != 1
+#error "You must enable exactly one interface: BME280_USE_I2C or BME280_USE_SPI"
+#endif
+/*--------------------------------------------------------------------------------*/
+
 typedef enum{
 	BME_OK = 0x00,
 	BME_FAIL = 0x01,
-}bme_status_t;
+}bme_err_t;
 
 typedef struct BME280_t BME280_t;
-
-typedef uint8_t bme_err_t;
 
 typedef struct{
 	GPIO_TypeDef *gpio_port;
 	uint16_t gpio_pin;
 }GPIO_bme_t;
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BME280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 typedef struct{
 	I2C_HandleTypeDef *i2c;
 	uint8_t i2c_addr;
 }I2C_bme_t;
 #endif
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BME280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 typedef struct{
 	SPI_HandleTypeDef *spi;
 	GPIO_bme_t cs_pin;
@@ -162,13 +169,13 @@ typedef struct{
 struct BME280_t{
 	bme_err_t (*read)(BME280_t *bme280_dev, uint8_t reg, uint8_t *data, uint16_t len);
 	bme_err_t (*write)(BME280_t *bme280_dev, uint8_t reg, const uint8_t *data, uint16_t len);
-	bme_err_t (*delay)(uint16_t ticks);
+	void (*delay)(uint32_t ticks);
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BME280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 	I2C_bme_t bme280_i2c;
 #endif
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BME280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 	SPI_bme_t bme280_spi;
 #endif
 
@@ -215,13 +222,13 @@ struct BME280_t{
 
 
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BME280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 
 bme_err_t bme280_init_i2c(BME280_t *bme280_dev,I2C_HandleTypeDef *i2c, uint8_t i2c_addr);
 
 #endif
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BME280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 
 bme_err_t bme280_init_spi(BME280_t *bme280_dev, SPI_HandleTypeDef *spi, GPIO_bme_t cs_pin);
 

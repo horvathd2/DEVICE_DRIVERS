@@ -20,6 +20,11 @@
 #define BNO055_MAG_ID_ADDR               0x02
 #define BNO055_GYR_ID_ADDR               0x03
 
+#define BNO055_GYR_ID 					 0x0F
+#define BNO055_MAG_ID 				  	 0x32
+#define BNO055_ACC_ID 					 0xFB
+#define BNO055_CHIP_ID					 0xA0
+
 /* Software / Bootloader Revision */
 #define BNO055_SW_REV_ID_LSB_ADDR        0x04
 #define BNO055_SW_REV_ID_MSB_ADDR        0x05
@@ -156,17 +161,92 @@
 #define BNO055_MAG_RADIUS_LSB_ADDR       0x69
 #define BNO055_MAG_RADIUS_MSB_ADDR       0x6A
 
+#define BNO055_I2C_ADDR1				 0x28
+#define BNO055_I2C_ADDR2				 0x29
+
+/*-----------COM Interface Selection (use either SPI or I2C, not both)------------*/
+#define BNO055_USE_UART		0	//Set to 1 to use UART
+#define BNO055_USE_I2C		1	//Set to 1 to use I2C
+
+#if (BNO055_USE_UART + BNO055_USE_I2C) != 1
+#error "You must select either I2C or UART as com interface for this device."
+#endif
+/*--------------------------------------------------------------------------------*/
+
+/*Power Modes*/
+typedef enum{
+	BNO055_PWR_NORMAL 	= 0,
+	BNO055_PWR_LOW 		= 1,
+	BNO055_PWR_SUSPEND 	= 2,
+}bno_pwr_mode_t;
+
+typedef enum{
+	BNO055_OP_CNFG		= 0,
+	BNO055_OP_ACC		= 1,
+	BNO055_OP_MAG		= 2,
+	BNO055_OP_GYRO		= 3,
+	BNO055_OP_ACCMAG	= 4,
+	BNO055_OP_ACCGYRO	= 5,
+	BNO055_OP_MAGGYRO	= 6,
+	BNO055_OP_AMG		= 7,
+	BNO055_OP_IMU		= 8,
+	BNO055_OP_COMP		= 9,
+	BNO055_OP_M4G		= 10,
+	BNO055_OP_NDOF_FO	= 11,
+	BNO055_OP_NDOF		= 12,
+}bno_op_mode_t;
+
 typedef enum{
 	BNO_OK = 0x00,
 	BNO_FAIL = 0x01,
-}bno_status_t;
-
-typedef uint8_t bno_err_t;
+}bno_err_t;
 
 typedef struct BNO055_t BNO055_t;
 
+#if BNO055_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
+typedef struct{
+	I2C_HandleTypeDef *hi2c;
+	uint8_t i2c_addr;
+}I2C_bno_t;
+#endif
+
+#if BNO055_USE_UART && defined(HAL_UART_MODULE_ENABLED)
+typedef struct{
+	UART_HandleTypeDef *huart;
+}UART_bno_t;
+#endif
+
 struct BNO055_t{
+	bno_err_t (*read)(BNO055_t *self, uint8_t reg, uint8_t *data, uint16_t len);
+	bno_err_t (*write)(BNO055_t *self, uint8_t reg, const uint8_t *data, uint16_t len);
+	void (*delay)(uint32_t ticks);
+
+#if BNO055_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
+	I2C_bno_t bno_i2c;
+#endif
+
+#if BNO055_USE_UART && defined(HAL_UART_MODULE_ENABLED)
+	UART_bno_t bno_uart;
+#endif
+
+	uint8_t chipID;
 
 };
+
+#if BNO055_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
+
+bno_err_t bno055_init_i2c(BNO055_t *self,
+						  I2C_HandleTypeDef *hi2c,
+						  uint8_t i2c_addr);
+
+#endif
+
+#if BNO055_USE_UART && defined(HAL_UART_MODULE_ENABLED)
+
+bno_err_t bno055_init_uart(BNO055_t *self
+						   UART_HandleTypeDef *huart);
+
+#endif
+
 
 #endif /* INC_BNO055_H_ */

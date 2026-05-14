@@ -104,28 +104,35 @@
 #define DIGP8_OFFSET	0x14
 #define DIGP9_OFFSET	0x16  //22
 
+/*-----------COM Interface Selection (use either SPI or I2C, not both)------------*/
+#define BMP280_USE_I2C	1     // Set 1 to use I2C
+#define BMP280_USE_SPI	0     // Set 1 to use SPI
+
+#if (BMP280_USE_I2C + BMP280_USE_SPI) != 1
+#error "You must enable exactly one interface: BMP280_USE_I2C or BMP280_USE_SPI"
+#endif
+/*--------------------------------------------------------------------------------*/
+
 typedef enum{
 	BMP_OK = 0x00,
 	BMP_FAIL = 0x01,
-}bmp_status_t;
+}bmp_err_t;
 
 typedef struct BMP280_t BMP280_t;
-
-typedef uint8_t bmp_err_t;
 
 typedef struct{
 	GPIO_TypeDef *gpio_port;
 	uint16_t gpio_pin;
 }GPIO_bmp_t;
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BMP280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 typedef struct{
 	I2C_HandleTypeDef *i2c;
 	uint8_t i2c_addr;
 }I2C_bmp_t;
 #endif
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BMP280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 typedef struct{
 	SPI_HandleTypeDef *spi;
 	GPIO_bmp_t cs_pin;
@@ -135,13 +142,13 @@ typedef struct{
 struct BMP280_t{
 	bmp_err_t (*read)(BMP280_t *bmp280_dev, uint8_t reg, uint8_t *data, uint16_t len);
 	bmp_err_t (*write)(BMP280_t *bmp280_dev, uint8_t reg, const uint8_t *data, uint16_t len);
-	bmp_err_t (*delay)(uint16_t ticks);
+	void (*delay)(uint32_t ticks);
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BMP280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 	I2C_bmp_t bmp280_i2c;
 #endif
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BMP280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 	SPI_bmp_t bmp280_spi;
 #endif
 
@@ -175,13 +182,13 @@ struct BMP280_t{
 	int16_t dig_P9;		//0x9E
 };
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BMP280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 
 bmp_err_t bmp280_init_i2c(BMP280_t *bmp280_dev,I2C_HandleTypeDef *i2c, uint8_t i2c_addr);
 
 #endif
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BMP280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 
 bmp_err_t bmp280_init_spi(BMP280_t *bmp280_dev, SPI_HandleTypeDef *spi, GPIO_bmp_t cs_pin);
 

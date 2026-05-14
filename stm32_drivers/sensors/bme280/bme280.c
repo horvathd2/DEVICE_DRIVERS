@@ -142,7 +142,7 @@ static uint32_t bme280_compensate_H_int32(BME280_t *bme280_dev, int32_t adc_H)
 
 /*-----------I2C--------------*/
 
-#if defined(HAL_I2C_MODULE_ENABLED)
+#if BME280_USE_I2C && defined(HAL_I2C_MODULE_ENABLED)
 
 static bme_err_t bme280_read_i2c(BME280_t *bme280_dev, uint8_t reg, uint8_t *data_buff, uint16_t len)
 {
@@ -179,11 +179,17 @@ bme_err_t bme280_init_i2c(BME280_t *bme280_dev,
 
 	bme280_dev->read = bme280_read_i2c;
 	bme280_dev->write = bme280_write_i2c;
-	bme280_dev->delay = NULL;
+	bme280_dev->delay = HAL_Delay;
 	bme280_dev->bme280_i2c.i2c = i2c;
 	bme280_dev->bme280_i2c.i2c_addr = i2c_addr;
 
+	if (bme280_dev->read(bme280_dev, REG_ID, &bme280_dev->chip_id, 1) != BME_OK)
+		return BME_FAIL;
+
 	if(bme280_get_calib_param(bme280_dev) != BME_OK)
+		return BME_FAIL;
+
+	if(bme280_configure(bme280_dev) != BME_OK)
 		return BME_FAIL;
 
 	return BME_OK;
@@ -193,7 +199,7 @@ bme_err_t bme280_init_i2c(BME280_t *bme280_dev,
 
 /*-----------SPI--------------*/
 
-#if defined(HAL_SPI_MODULE_ENABLED)
+#if BME280_USE_SPI && defined(HAL_SPI_MODULE_ENABLED)
 
 static void CS_LOW(BME280_t *bme280_dev)
 {
@@ -275,7 +281,7 @@ bme_err_t bme280_init_spi(BME280_t *bme280_dev,
 
 	bme280_dev->read = bme280_read_spi;
 	bme280_dev->write = bme280_write_spi;
-	bme280_dev->delay = NULL;
+	bme280_dev->delay = HAL_Delay;
 	bme280_dev->bme280_spi.spi = spi;
 	bme280_dev->bme280_spi.cs_pin = cs_pin;
 

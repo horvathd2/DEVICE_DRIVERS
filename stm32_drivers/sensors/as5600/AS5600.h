@@ -36,16 +36,14 @@
 typedef enum{
 	AS_OK = 0x00,
 	AS_FAIL = 0x01,
-}as_status_t;
-
-typedef uint8_t as_err_t;
+}as_err_t;
 
 typedef struct AS5600_t AS5600_t;
 
 struct AS5600_t{
 	as_err_t (*read)(AS5600_t *self, uint8_t reg, uint8_t *data, uint16_t len);
 	as_err_t (*write)(AS5600_t *self, uint8_t reg, const uint8_t *data, uint16_t len);
-	as_err_t (*delay)(uint16_t ticks);
+	void (*delay)(uint32_t ticks);
 
 	I2C_HandleTypeDef *as5600_i2c;
 	float magnitude;

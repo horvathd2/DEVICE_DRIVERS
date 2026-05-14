@@ -38,7 +38,7 @@ as_err_t as5600_init(AS5600_t *self, I2C_HandleTypeDef *as5600_i2c, uint8_t i2c_
 
 	self->read = as5600_read;
 	self->write = as5600_write;
-	self->delay = NULL;
+	self->delay = HAL_Delay;
 	self->as5600_i2c = as5600_i2c;
 	self->i2c_addr = i2c_addr;
 	self->dma_rx_done = 0;
